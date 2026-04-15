@@ -1,53 +1,55 @@
-from flask import Flask, request
+from flask import Flask
 
 app = Flask(__name__)
 
 def get_3d_world():
-    # We define our 3 block types (colors/textures)
-    blocks = {
-        "1": "green",  # Grass
-        "2": "brown",  # Dirt
-        "3": "gray"    # Stone
-    }
-    
     return f"""
     <!DOCTYPE html>
     <html>
       <head>
         <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+        
         <script>
-          let selectedBlock = '{blocks["1"]}';
-
-          // Listen for keys 1, 2, 3 to change blocks
+          // 1 = Grass, 2 = Dirt, 3 = Stone
+          let selectedColor = 'green';
+          
           window.addEventListener('keydown', (e) => {{
-            if (e.key === '1') selectedBlock = '{blocks["1"]}';
-            if (e.key === '2') selectedBlock = '{blocks["2"]}';
-            if (e.key === '3') selectedBlock = '{blocks["3"]}';
+            if (e.key === '1') selectedColor = 'green';
+            if (e.key === '2') selectedColor = '#8B4513'; // SaddleBrown
+            if (e.key === '3') selectedColor = 'gray';
           }});
 
-          AFRAME.registerComponent('block-manager', {{
+          // The logic to place/break blocks
+          AFRAME.registerComponent('click-to-build', {{
             init: function () {{
               this.el.addEventListener('click', (evt) => {{
-                // If shift is held, break the block
+                let targetEl = evt.detail.intersection.object.el;
+                
+                // SHIFT + CLICK = BREAK
                 if (evt.getModifierState('Shift')) {{
-                  if (evt.detail.intersection.object.el.id !== 'floor') {{
-                    evt.detail.intersection.object.el.remove();
+                  if (targetEl.id !== 'ground') {{
+                    targetEl.parentNode.removeChild(targetEl);
                   }}
-                }} else {{
-                  // Otherwise, place a block on the face we clicked
+                }} 
+                // REGULAR CLICK = PLACE
+                else {{
                   let pos = evt.detail.intersection.point;
                   let normal = evt.detail.intersection.face.normal;
                   
-                  let newBlock = document.createElement('a-box');
-                  // Snap to grid logic
-                  newBlock.setAttribute('position', {{
+                  // Calculate grid position (snapping to 1x1x1 cubes)
+                  let newPos = {{
                     x: Math.round(pos.x + normal.x * 0.5),
                     y: Math.round(pos.y + normal.y * 0.5),
                     z: Math.round(pos.z + normal.z * 0.5)
-                  }});
-                  newBlock.setAttribute('color', selectedBlock);
-                  newBlock.setAttribute('static-body', '');
-                  document.querySelector('a-scene').appendChild(newBlock);
+                  }};
+
+                  let newBlock = document.createElement('a-box');
+                  newBlock.setAttribute('position', newPos);
+                  newBlock.setAttribute('color', selectedColor);
+                  newBlock.setAttribute('static-body', ''); // Makes it a solid wall
+                  newBlock.setAttribute('class', 'clickable');
+                  this.el.sceneEl.appendChild(newBlock);
                 }}
               }});
             }}
@@ -55,21 +57,26 @@ def get_3d_world():
         </script>
       </head>
       <body>
-        <a-scene block-manager cursor="rayOrigin: mouse">
+        <a-scene physics="debug: false" click-to-build cursor="rayOrigin: mouse">
+          
           <a-sky color="#87CEEB"></a-sky>
 
-          <a-plane id="floor" position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#7BC8A4"></a-plane>
+          <a-plane id="ground" static-body rotation="-90 0 0" width="100" height="100" color="#228B22"></a-plane>
 
-          <a-entity id="rig" position="0 1.6 5">
-            <a-camera look-controls wasd-controls></a-camera>
+          <a-entity id="player" movement-controls="fly: false" kinematic-body position="0 1.6 4">
+            <a-entity camera look-controls position="0 1.6 0"></a-entity>
           </a-entity>
 
-          <div style="position: fixed; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; font-family: sans-serif;">
-            WASD: Move | Mouse: Look | Click: Place Block<br>
-            Shift + Click: Break Block<br>
-            Keys 1, 2, 3: Change Block Type
-          </div>
+          <a-box static-body position="-1 0.5 -3" color="gray"></a-box>
+          <a-box static-body position="0 0.5 -3" color="green"></a-box>
+          <a-box static-body position="1 0.5 -3" color="#8B4513"></a-box>
+
         </a-scene>
+
+        <div style="position:fixed; bottom:20px; left:20px; color:white; font-family:sans-serif; background:rgba(0,0,0,0.5); padding:10px;">
+            <b>Controls:</b> WASD to Walk | Click to Place | Shift+Click to Break<br>
+            <b>Blocks:</b> 1: Grass | 2: Dirt | 3: Stone
+        </div>
       </body>
     </html>
     """
