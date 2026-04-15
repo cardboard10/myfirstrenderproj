@@ -34,51 +34,72 @@ def get_babylon_world():
 
                 const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 2, -10), scene);
                 camera.attachControl(canvas, true);
+                
+                // Slow down movement and looking
+                camera.speed = 0.3;
+                camera.angularSensibility = 3000;
+                camera.inertia = 0; 
+                
                 camera.keysUp=[87]; camera.keysDown=[83]; camera.keysLeft=[65]; camera.keysRight=[68];
                 camera.applyGravity = true; camera.checkCollisions = true;
-                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5); // Thinner body for easier movement
+                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
 
                 const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
-                // --- THE GRID GROUND ---
                 const ground = BABYLON.MeshBuilder.CreateGround("ground", {{width: 100, height: 100}}, scene);
-                
-                // Create the Grid Material
                 const gridMat = new BABYLON.GridMaterial("grid", scene);
-                gridMat.mainColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Dark background
-                gridMat.lineColor = new BABYLON.Color3(0.3, 0.3, 0.3); // Gray lines
-                gridMat.gridRatio = 1; // One line every 1 unit (perfect for 1x1 blocks)
+                gridMat.mainColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+                gridMat.lineColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+                gridMat.gridRatio = 1;
                 ground.material = gridMat;
-                
                 ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, {{ mass: 0 }}, scene);
 
-                // --- BUILD LOGIC ---
                 window.addEventListener("mousedown", (evt) => {{
                     if (document.pointerLockElement !== canvas) return;
-
                     const pickInfo = scene.pick(canvas.width / 2, canvas.height / 2);
-                    
                     if (pickInfo.hit) {{
                         const target = pickInfo.pickedMesh;
-
                         if (evt.button === 2 || evt.shiftKey) {{ 
-                            // BREAK
                             if (target.name !== "ground") target.dispose();
                         }} else if (evt.button === 0) {{ 
-                            // PLACE
                             const normal = pickInfo.getNormal(true);
-                            let newPos;
+                            let newPos = (target.name === "ground") ? 
+                                new BABYLON.Vector3(Math.round(pickInfo.pickedPoint.x), 0.5, Math.round(pickInfo.pickedPoint.z)) :
+                                target.position.add(normal);
 
-                            if (target.name === "ground") {{
-                                // Snap to ground grid
-                                newPos = new BABYLON.Vector3(
-                                    Math.round(pickInfo.pickedPoint.x),
-                                    0.5, 
-                                    Math.round(pickInfo.pickedPoint.z)
-                                );
-                            }} else {{
-                                // Stack on other blocks
-                                newPos = target.position.add(normal);
-                            }}
+                            const box = BABYLON.MeshBuilder.CreateBox("voxel", {{size: 1}}, scene);
+                            box.position = newPos;
+                            const bMat = new BABYLON.StandardMaterial("bMat", scene);
+                            bMat.diffuseColor = selectedColor;
+                            box.material = bMat;
+                            box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, {{ mass: 0 }}, scene);
+                            box.checkCollisions = true;
+                        }}
+                    }}
+                }});
 
-                            const box = BABYLON.MeshBuilder.CreateBox("voxel", {{size
+                window.addEventListener("keydown", (e) => {{
+                    if (e.key === "1") selectedColor = new BABYLON.Color3(0.1, 0.8, 0.1);
+                    if (e.key === "2") selectedColor = new BABYLON.Color3(0.4, 0.2, 0.1);
+                    if (e.key === "3") selectedColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+                }});
+
+                return scene;
+            }};
+
+            const scene = createScene();
+            canvas.addEventListener("click", () => canvas.requestPointerLock());
+            engine.runRenderLoop(() => scene.render());
+            window.addEventListener("resize", () => engine.resize());
+            window.addEventListener("contextmenu", (e) => e.preventDefault());
+        </script>
+    </body>
+    </html>
+    """
+
+@app.route('/')
+def index():
+    return get_babylon_world()
+
+if __name__ == "__main__":
+    app.run()
