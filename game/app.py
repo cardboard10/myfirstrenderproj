@@ -51,9 +51,10 @@ def get_babylon_world():
                 const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 2, -10), scene);
                 camera.attachControl(canvas, true);
                 
-                camera.speed = 0.4;               // Increased speed from slow-crawl
-                camera.inertia = 0;               
-                camera.angularSensibility = 2000; 
+                // --- FIXED MOVEMENT ---
+                camera.speed = 0.1;               // Slowed down walking speed
+                camera.inertia = 0;               // Stops instantly when you let go
+                camera.angularSensibility = 3000; // Slower mouse looking
                 
                 camera.keysUp=[87]; camera.keysDown=[83]; camera.keysLeft=[65]; camera.keysRight=[68];
                 camera.applyGravity = true; 
@@ -74,7 +75,7 @@ def get_babylon_world():
                     const box = BABYLON.MeshBuilder.CreateBox("voxel", {{size: 1}}, scene);
                     box.position = pos;
                     const bMat = new BABYLON.StandardMaterial("bMat", scene);
-                    bMat.emissiveColor = color; // Makes them glow like Tron
+                    bMat.emissiveColor = color; // Glow effect
                     box.material = bMat;
                     box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, {{ mass: 0 }}, scene);
                     box.checkCollisions = true;
@@ -82,3 +83,55 @@ def get_babylon_world():
                     if (!isInitial) {{
                         fetch('/save', {{
                             method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{ x: pos.x, y: pos.y, z: pos.z, color: color }})
+                        }});
+                    }}
+                }};
+
+                savedBlocks.forEach(b => {{
+                    addBlock(new BABYLON.Vector3(b.x, b.y, b.z), b.color, true);
+                }});
+
+                window.addEventListener("mousedown", (evt) => {{
+                    if (document.pointerLockElement !== canvas) return;
+                    const pickInfo = scene.pick(canvas.width / 2, canvas.height / 2);
+                    if (pickInfo.hit) {{
+                        const target = pickInfo.pickedMesh;
+                        if (evt.button === 2 || evt.shiftKey) {{ 
+                            if (target.name !== "ground") {{
+                                fetch('/break', {{
+                                    method: 'POST',
+                                    headers: {{ 'Content-Type': 'application/json' }},
+                                    body: JSON.stringify({{ x: target.position.x, y: target.position.y, z: target.position.z }})
+                                }});
+                                target.dispose();
+                            }}
+                        }} else if (evt.button === 0) {{ 
+                            const normal = pickInfo.getNormal(true);
+                            let newPos = (target.name === "ground") ? 
+                                new BABYLON.Vector3(Math.round(pickInfo.pickedPoint.x), 0.5, Math.round(pickInfo.pickedPoint.z)) :
+                                target.position.add(normal);
+                            addBlock(newPos, selectedColor);
+                        }}
+                    }}
+                }});
+
+                return scene;
+            }};
+
+            const scene = createScene();
+            canvas.addEventListener("click", () => canvas.requestPointerLock());
+            engine.runRenderLoop(() => scene.render());
+            window.addEventListener("contextmenu", (e) => e.preventDefault());
+        </script>
+    </body>
+    </html>
+    """
+
+@app.route('/')
+def index():
+    return get_babylon_world()
+
+if __name__ == "__main__":
+    app.run()
