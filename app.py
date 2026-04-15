@@ -4,7 +4,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "SUCCESS: Python is alive!"
+    name=input("Name:")
+    return f"SUCCESS: Python is alive {name}!"
 
 if __name__ == "__main__":
     app.run()
