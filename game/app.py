@@ -57,21 +57,28 @@ def get_game_html():
                 scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.05, 1); // Dark background
 
                 // CAMERA SETTINGS
+                // --- ZONE 3: BALANCED PHYSICS ---
                 const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 5, -15), scene);
                 camera.attachControl(canvas, true);
+                
+                // SPEED: Try 0.1 for a steady walk. 0.5 was likely too fast.
+                camera.speed = 0.1; 
+                
+                // INERTIA: Set this to 0. If it is 0.1 or higher, you will "slide" 
+                // and the speed will feel like it's multiplying out of control.
+                camera.inertia = 0; 
+                
+                // COLLISION SETTINGS (Keep these for physics!)
+                camera.checkCollisions = true;
+                camera.applyGravity = true; 
+                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5);
+                
                 
                 // Standard WASD mapping
                 camera.keysUp    = [87]; // W
                 camera.keysDown  = [83]; // S
                 camera.keysLeft  = [65]; // A
                 camera.keysRight = [68]; // D
-                
-                camera.speed = 0.1;   // If it was 0.02, it might feel like you aren't moving at all!
-                camera.inertia = 0.0; // Giving it a tiny bit of inertia helps movement feel smoother
-                
-                camera.checkCollisions = true;
-                camera.applyGravity = true; // Optional: enables gravity so you fall
-                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5); // Your "body" size
                 
                 
                 
