@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify
 import json
 
 
-from flask import Flask
+from flask import Flask    
 
 
 
@@ -407,20 +407,21 @@ def get_game_html():
 
                 window.addEventListener("mousedown", (evt) => {{
 
-
-                // THE GRID FLOOR
-
-
-                const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 60, height: 60}, scene);
-
-
-                const groundMat = new BABYLON.StandardMaterial("gMat", scene);
-
-
-                groundMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.2); 
-
-
-                ground.material = groundMat;
+                // --- THE UPDATED GRID FLOOR ---
+                // 1. Create the Ground
+                const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 200, height: 200}, scene);
+                
+                // 2. Create the Neon Grid Material
+                // Note: You must have the materialsLibrary script in your <head> (which you do!)
+                const gridMat = new BABYLON.GridMaterial("grid", scene);
+                gridMat.mainColor = new BABYLON.Color3(0.05, 0.05, 0.1); // Dark Navy background
+                gridMat.lineColor = new BABYLON.Color3(0, 1, 1);       // Bright Cyan Lines
+                gridMat.gridRatio = 1;                                // Lines every 1 unit (matches block size)
+                gridMat.majorUnitFrequency = 5;                       // Thicker lines every 5 units
+                ground.material = gridMat;
+                
+                // 3. Optional: Make the ground solid so you don't fall through
+                ground.checkCollisions = true;
 
 
 
