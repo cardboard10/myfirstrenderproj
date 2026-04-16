@@ -54,7 +54,7 @@ def get_babylon_world():
                 const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 2, -10), scene);
                 camera.attachControl(canvas, true);
                 
-                // SLOWEST SETTINGS POSSIBLE
+                // CRITICAL SPEED FIX
                 camera.speed = 0.02; 
                 camera.inertia = 0; 
                 camera.angularSensibility = 5000; 
@@ -62,4 +62,78 @@ def get_babylon_world():
                 camera.keysUp=[87]; camera.keysDown=[83]; camera.keysLeft=[65]; camera.keysRight=[68];
                 camera.applyGravity = true; 
                 camera.checkCollisions = true;
-                camera.ellipsoid = new BABYLON
+                camera.ellipsoid = new BABYLON.Vector3(0.4, 1, 0.4);
+
+                new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+                // Thick Ground for perfect clicking
+                const ground = BABYLON.MeshBuilder.CreateBox("ground", {{width: 200, height: 0.5, depth: 200}}, scene);
+                ground.position.y = -0.25; 
+                const gridMat = new BABYLON.GridMaterial("grid", scene);
+                gridMat.mainColor = new BABYLON.Color3(0.02, 0.02, 0.05); 
+                gridMat.lineColor = new BABYLON.Color3(0, 1, 1);
+                gridMat.gridRatio = 1;
+                ground.material = gridMat;
+                ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, {{ mass: 0 }}, scene);
+
+                const addBlock = (pos, color, shouldSave = true) => {{
+                    const box = BABYLON.MeshBuilder.CreateBox("voxel", {{size: 1}}, scene);
+                    box.position = pos;
+                    const bMat = new BABYLON.StandardMaterial("bMat", scene);
+                    bMat.emissiveColor = color;
+                    box.material = bMat;
+                    box.physicsImpostor = new BABYLON.PhysicsImpostor(box, BABYLON.PhysicsImpostor.BoxImpostor, {{ mass: 0 }}, scene);
+                    box.checkCollisions = true;
+
+                    if (shouldSave) {{
+                        fetch('/save', {{
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }},
+                            body: JSON.stringify({{ x: pos.x, y: pos.y, z: pos.z, color: color }})
+                        }});
+                    }}
+                }};
+
+                savedBlocks.forEach(b => addBlock(new BABYLON.Vector3(b.x, b.y, b.z), b.color, false));
+
+                window.addEventListener("mousedown", (evt) => {{
+                    if (document.pointerLockElement !== canvas) return;
+                    const pickInfo = scene.pick(canvas.width / 2, canvas.height / 2);
+                    if (pickInfo.hit) {{
+                        const target = pickInfo.pickedMesh;
+                        if (evt.button === 2) {{ 
+                            if (target.name !== "ground") {{
+                                fetch('/break', {{
+                                    method: 'POST',
+                                    headers: {{ 'Content-Type': 'application/json' }},
+                                    body: JSON.stringify({{ x: target.position.x, y: target.position.y, z: target.position.z }})
+                                }});
+                                target.dispose();
+                            }}
+                        }} else if (evt.button === 0) {{ 
+                            const normal = pickInfo.getNormal(true);
+                            let newPos = (target.name === "ground") ? 
+                                new BABYLON.Vector3(Math.round(pickInfo.pickedPoint.x), 0.5, Math.round(pickInfo.pickedPoint.z)) :
+                                target.position.add(normal);
+                            addBlock(newPos, selectedColor);
+                        }}
+                    }}
+                }});
+                return scene;
+            }};
+
+            const scene = createScene();
+            canvas.addEventListener("click", () => canvas.requestPointerLock());
+            engine.runRenderLoop(() => scene.render());
+            window.addEventListener("contextmenu", (e) => e.preventDefault());
+        </script>
+    </body>
+    </html>
+    """
+
+@app.route('/')
+def index():
+    return get_babylon_world()
+
+if __name__ == "__main__":
+    app.run()
