@@ -88,7 +88,11 @@ def get_game_html():
                     mat.emissiveColor = BABYLON.Color3.FromHexString(colorHex);
                     block.material = mat;
                     
-                    blocksArray.push(block); // Store it for later
+                    // --- ADD THESE TWO LINES FOR PHYSICS ---
+                    block.checkCollisions = true; 
+                    // This tells the camera "don't walk through me"
+                        
+                    blocksArray.push(block);
                 };
 
                 // CLICK TO BUILD (Standard Mechanic)
