@@ -59,10 +59,17 @@ def get_game_html():
                 // CAMERA SETTINGS
                 const camera = new BABYLON.UniversalCamera("camera", new BABYLON.Vector3(0, 5, -15), scene);
                 camera.attachControl(canvas, true);
-                camera.speed = 0.1;   // Change this to walk faster/slower
-                camera.inertia = 0;   // Set to 0 to stop sliding
-                camera.keysUp=[87]; camera.keysDown=[83]; camera.keysLeft=[65]; camera.keysRight=[68];
+                
+                // Standard WASD mapping
+                camera.keysUp    = [87]; // W
+                camera.keysDown  = [83]; // S
+                camera.keysLeft  = [65]; // A
+                camera.keysRight = [68]; // D
+                
+                camera.speed = 0.5;   // If it was 0.02, it might feel like you aren't moving at all!
+                camera.inertia = 0.1; // Giving it a tiny bit of inertia helps movement feel smoother
 
+                
                 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
                 // THE GRID FLOOR
