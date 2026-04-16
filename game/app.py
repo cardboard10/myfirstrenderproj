@@ -68,7 +68,12 @@ def get_game_html():
                 
                 camera.speed = 0.5;   // If it was 0.02, it might feel like you aren't moving at all!
                 camera.inertia = 0.1; // Giving it a tiny bit of inertia helps movement feel smoother
-
+                
+                camera.checkCollisions = true;
+                camera.applyGravity = true; // Optional: enables gravity so you fall
+                camera.ellipsoid = new BABYLON.Vector3(0.5, 1, 0.5); // Your "body" size
+                
+                
                 
                 new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
 
