@@ -66,7 +66,7 @@ def get_game_html():
                 camera.keysLeft  = [65]; // A
                 camera.keysRight = [68]; // D
                 
-                camera.speed = 0.0;   // If it was 0.02, it might feel like you aren't moving at all!
+                camera.speed = 0.000001;   // If it was 0.02, it might feel like you aren't moving at all!
                 camera.inertia = 0.1; // Giving it a tiny bit of inertia helps movement feel smoother
                 
                 camera.checkCollisions = true;
